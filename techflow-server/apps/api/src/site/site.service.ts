@@ -1,54 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { ClientPlatform, LeadStatus } from '@prisma/client';
 
+import { ClientConfigService } from '../client-config/client-config.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateLeadDto } from './dto/create-lead.dto';
 import type { ListLeadsQueryDto } from './dto/list-leads-query.dto';
 
 @Injectable()
 export class SiteService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly clientConfigService: ClientConfigService,
+  ) {}
 
   getConfig() {
-    return {
-      title: '一套后端，服务 Web、H5、小程序、App',
-      subtitle:
-        '这是一个给创业团队演练开发、测试、发布流程的演示页。页面本身、表单提交、登录、鉴权和后台列表都由同一个 NestJS 后端支撑。',
-      recommendedFlow: [
-        '本地启动 Docker 开发环境',
-        '浏览器打开 /demo',
-        '提交线索表单并验证写库',
-        '登录管理员并读取受保护接口',
-        '执行 lint、test、build',
-        '合并 main 自动发布 staging',
-        '人工确认后提升到 production',
-      ],
-    };
+    return this.clientConfigService.getPublicSiteConfig();
   }
 
   getFeatures() {
-    return [
-      {
-        tag: 'Local Dev',
-        title: '本地一键启动',
-        description: '用 Docker 启动 API、PostgreSQL、Redis，减少环境差异和新人配置成本。',
-      },
-      {
-        tag: 'Client APIs',
-        title: '多端共用接口',
-        description: '同一套 REST API 可以供网页、H5、小程序和 App 共用，接口文档自动生成。',
-      },
-      {
-        tag: 'Protected Flow',
-        title: '公开接口 + 鉴权接口',
-        description: '公开页面负责获客，管理员登录后读取受保护数据，完整覆盖真实业务链路。',
-      },
-      {
-        tag: 'Release',
-        title: '测试到生产发布',
-        description: '合并 main 自动进 staging，通过后再人工审批晋升 production。',
-      },
-    ];
+    return this.clientConfigService.getFeatureCards();
   }
 
   getClientEndpoints() {
@@ -66,6 +36,20 @@ export class SiteService {
         method: 'GET',
         path: '/api/v1/site/features',
         description: '客户端用来渲染营销卡片、产品卖点或新手引导。',
+      },
+      {
+        audience: 'Public',
+        name: '读取共享启动配置',
+        method: 'GET',
+        path: '/api/v1/client-config/bootstrap',
+        description: '各客户端启动时读取共享配置、登录接口路径和公共 API 前缀。',
+      },
+      {
+        audience: 'Public',
+        name: '读取共享功能目录',
+        method: 'GET',
+        path: '/api/v1/client-config/features',
+        description: '各客户端读取统一功能卡片和公共能力目录。',
       },
       {
         audience: 'Public',
@@ -87,6 +71,20 @@ export class SiteService {
         method: 'GET',
         path: '/api/v1/users/me',
         description: '客户端登录后读取当前身份，判断角色和权限。',
+      },
+      {
+        audience: 'App',
+        name: '读取 App 启动聚合数据',
+        method: 'GET',
+        path: '/api/v1/app/bootstrap',
+        description: 'App 独立接口模块返回启动页、首页初始化所需的聚合数据。',
+      },
+      {
+        audience: 'App',
+        name: '读取 App 首页数据',
+        method: 'GET',
+        path: '/api/v1/app/home',
+        description: 'App 独立接口模块根据移动端页面结构返回首页区块数据。',
       },
       {
         audience: 'Admin',

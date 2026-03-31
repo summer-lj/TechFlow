@@ -75,6 +75,20 @@ describe('API starter (e2e)', () => {
     expect(endpointsResponse.body.data.length).toBeGreaterThanOrEqual(5);
   });
 
+  it('returns shared bootstrap data and an app-specific payload', async () => {
+    const [clientBootstrapResponse, appBootstrapResponse, appHomeResponse] = await Promise.all([
+      request(app.getHttpServer()).get('/api/v1/client-config/bootstrap').expect(200),
+      request(app.getHttpServer()).get('/api/v1/app/bootstrap').expect(200),
+      request(app.getHttpServer()).get('/api/v1/app/home').expect(200),
+    ]);
+
+    expect(clientBootstrapResponse.body.data.product.name).toBe('TechFlow');
+    expect(clientBootstrapResponse.body.data.auth.loginPath).toBe('/api/v1/auth/login');
+    expect(appBootstrapResponse.body.data.client).toBe('app');
+    expect(appBootstrapResponse.body.data.routes.homePath).toBe('/api/v1/app/home');
+    expect(appHomeResponse.body.data.sections).toHaveLength(2);
+  });
+
   it('submits a public lead and lets an admin read it back', async () => {
     const createLeadResponse = await request(app.getHttpServer())
       .post('/api/v1/site/leads')

@@ -46,14 +46,16 @@ TechFlow 的共享后端与平台服务层。
 下面这份目录可以帮助你快速定位文件：
 
 ```text
-backend/
+techflow-server/
 ├─ apps/
 │  └─ api/                       # 主后端服务
 │     ├─ src/
-│     │  ├─ auth/                # 登录、刷新 token、退出登录
-│     │  ├─ users/               # 当前用户、用户相关接口
+│     │  ├─ auth/                # 统一登录、刷新 token、退出登录
+│     │  ├─ users/               # 当前用户和用户基础资料
 │     │  ├─ health/              # 健康检查
-│     │  ├─ site/                # 演示网页和公开接口
+│     │  ├─ client-config/       # 多端共享启动配置、功能目录
+│     │  ├─ app-client/          # App 独立接口模块，负责移动端聚合接口
+│     │  ├─ site/                # 当前保留的 demo/公开接口模块，后续继续拆分
 │     │  ├─ prisma/              # Prisma 连接封装
 │     │  ├─ redis/               # Redis 连接封装
 │     │  ├─ config/              # 环境变量校验
@@ -62,12 +64,35 @@ backend/
 │     └─ test/                   # e2e 测试
 ├─ docker/                       # API 容器镜像和启动脚本
 ├─ deploy/                       # 服务器部署脚本、Nginx、生产 compose
-├─ docs/                         # 计划文档、部署 runbook、环境变量说明
+├─ docs/                         # 计划文档、部署 runbook、环境变量说明、多端 API 设计
 ├─ .github/workflows/            # GitHub Actions: CI 和部署流程
 ├─ docker-compose.yml            # 本地开发环境编排
 ├─ Makefile                      # 最常用的启动、停止、测试命令
 └─ README.md                     # 项目总说明
 ```
+
+## 当前模块说明
+
+当前后端已经开始从 demo/starter 结构向“共享服务 + 独立端接口层”演进，可以先这样理解：
+
+- `auth`
+  平台级账号能力，所有客户端共用。
+- `users`
+  当前用户和基础身份信息。
+- `client-config`
+  多端共享配置入口，给 `app/h5/mini/admin` 提供统一启动信息和公共能力目录。
+- `app-client`
+  App 独立接口层，负责按照移动端页面需要聚合返回结构，后续如果公司做大，这一层可以自然拆成单独的 App BFF 服务。
+- `site`
+  当前仍兼顾 demo 页面和公开能力，会逐步拆到 `marketing`、`demo`、`admin` 等更清晰的模块中。
+
+项目后续的目标结构会逐步收敛为：
+
+- 平台基础模块：`auth`、`users`、`health`、`client-config`
+- 共享领域模块：`marketing`、`content`、`member` 等
+- 后台管理模块：`admin/*`
+- 端侧聚合模块：`app/*`、`h5/*`、`mini/*`
+- 第三方集成模块：`integration/*`
 
 ## 常见配置文件说明
 
@@ -97,7 +122,9 @@ backend/
 
 ## 你最常会改的地方
 
-- 想加新接口：看 `apps/api/src`
+- 想加共享业务接口：看 `apps/api/src`
+- 想加 App 独立接口：看 `apps/api/src/app-client`
+- 想加多端共享配置：看 `apps/api/src/client-config`
 - 想改数据库表：看 `apps/api/prisma/schema.prisma`
 - 想改本地启动方式：看 `docker-compose.yml`
 - 想改部署流程：看 `deploy/` 和 `.github/workflows/`
@@ -122,6 +149,10 @@ backend/
 - `GET /health`
 - `GET /docs`
 - `GET /demo`
+- `GET /api/v1/client-config/bootstrap`
+- `GET /api/v1/client-config/features`
+- `GET /api/v1/app/bootstrap`
+- `GET /api/v1/app/home`
 - `GET /api/v1/site/config`
 - `GET /api/v1/site/features`
 - `GET /api/v1/site/client-endpoints`
@@ -138,3 +169,5 @@ backend/
 - [功能演练流程](./docs/feature-walkthrough.md)
 - [部署 Runbook](./docs/deployment-runbook.md)
 - [环境变量说明](./docs/environment-variables.md)
+- [整体架构说明](../docs/architecture.md)
+- [多端 API 分层设计](../docs/multi-client-api-design.md)

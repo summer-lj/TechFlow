@@ -13,7 +13,7 @@
 ## 项目结构
 
 - `techflow-server`
-  TechFlow 的共享后端与平台服务层。
+  TechFlow 的共享后端与平台服务层，当前已经包含 NestJS API、共享配置模块和 App 独立接口模块。
 - `techflow-admin`
   面向内部运营、客服、内容管理、数据查看的后台管理系统。
 - `techflow-app`
@@ -24,6 +24,29 @@
   面向微信等生态的小程序客户端。
 - `docs`
   项目级架构说明和协作约定。
+
+## 当前结构说明
+
+当前仓库已经完成“多端目录 + 共享后端”的基础分层：
+
+- `techflow-server`
+  当前唯一有实质代码的模块，负责共享业务服务。
+- `techflow-server/apps/api/src/auth`
+  统一登录、刷新 token、退出登录等账号能力。
+- `techflow-server/apps/api/src/users`
+  当前用户和用户基础资料接口。
+- `techflow-server/apps/api/src/health`
+  健康检查和依赖探活。
+- `techflow-server/apps/api/src/client-config`
+  多端共享的启动配置和公共能力目录。
+- `techflow-server/apps/api/src/app-client`
+  App 独立接口模块，负责移动端聚合接口，不直接承载底层业务真相。
+- `techflow-server/apps/api/src/site`
+  当前仍保留的 demo/公开接口模块，后续会继续拆分为更稳定的业务边界。
+- `docs/architecture.md`
+  项目级职责、模块边界和整体架构说明。
+- `docs/multi-client-api-design.md`
+  多端 API 分层、BFF 设计和未来可拆服务的实施方案。
 
 ## 模块职责边界
 
@@ -57,7 +80,7 @@
 ## 当前状态
 
 - 根目录已经完成多模块目录拆分。
-- `techflow-server` 已经有可运行的 NestJS 后端骨架。
+- `techflow-server` 已经有可运行的 NestJS 后端骨架，并开始按“共享配置 + 独立端侧接口模块”拆分。
 - `techflow-admin`、`techflow-app`、`techflow-h5`、`techflow-mini` 目前还是空目录，说明现在最需要先定义清楚的是整体职责和服务边界。
 
 ## 对 `techflow-server` 的调整建议

@@ -4,7 +4,9 @@ import { APP_GUARD } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { randomUUID } from 'crypto';
 
+import { AppClientModule } from './app-client/app-client.module';
 import { AuthModule } from './auth/auth.module';
+import { ClientConfigModule } from './client-config/client-config.module';
 import { validateEnv } from './config/env.validation';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -62,9 +64,11 @@ import { UsersModule } from './users/users.module';
     PrismaModule,
     RedisModule,
     HealthModule,
+    ClientConfigModule,
     SiteModule,
     UsersModule,
     AuthModule,
+    AppClientModule,
   ],
   providers: [
     {

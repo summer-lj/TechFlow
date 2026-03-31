@@ -10,12 +10,16 @@ describe('SiteService', () => {
       count: jest.fn(),
     },
   };
+  const clientConfigService = {
+    getPublicSiteConfig: jest.fn(),
+    getFeatureCards: jest.fn(),
+  };
 
   let siteService: SiteService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    siteService = new SiteService(prismaService as never);
+    siteService = new SiteService(prismaService as never, clientConfigService as never);
   });
 
   it('returns a stable catalog of client endpoints', () => {
