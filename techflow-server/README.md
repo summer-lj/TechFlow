@@ -1,6 +1,15 @@
-# Backend Starter
+# TechFlow Server
 
-一个面向 Web、H5、小程序、App 的 NestJS 后端起步仓库，内置本地 Docker 开发环境、Prisma、Redis、Swagger、Jest、GitHub Actions，以及单台阿里云服务器上的 `staging + production` 双环境部署方案。
+TechFlow 的共享后端与平台服务层。
+
+当前它基于 NestJS 搭建，内置本地 Docker 开发环境、Prisma、Redis、Swagger、Jest、GitHub Actions，以及单台阿里云服务器上的 `staging + production` 双环境部署方案。
+
+## 在 TechFlow 中的职责
+
+- 为 `techflow-admin`、`techflow-app`、`techflow-h5`、`techflow-mini` 提供统一 API。
+- 承载账号、用户、权限、配置、业务数据和运营接口。
+- 负责数据库、Redis、第三方平台等基础集成。
+- 当前仓库里仍保留了一部分 demo/starter 结构，后续会逐步向正式业务模块演进。
 
 ## 先理解这个项目
 
