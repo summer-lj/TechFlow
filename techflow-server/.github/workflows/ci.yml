@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: backend_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d backend_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    env:
+      NODE_ENV: test
+      APP_NAME: backend-starter-test
+      APP_HOST: 127.0.0.1
+      PORT: 3000
+      API_PREFIX: api/v1
+      LOG_LEVEL: warn
+      TRUST_PROXY: 'false'
+      SWAGGER_ENABLED: 'false'
+      CORS_ORIGINS: http://localhost:3000
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_PORT: 5432
+      DATABASE_NAME: backend_test
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/backend_test?schema=public
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      REDIS_URL: redis://127.0.0.1:6379/1
+      JWT_ACCESS_SECRET: test-access-secret
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_SECRET: test-refresh-secret
+      JWT_REFRESH_TTL: 7d
+      DEFAULT_ADMIN_EMAIL: test-admin@example.com
+      DEFAULT_ADMIN_PASSWORD: ChangeMe123!
+      DEFAULT_ADMIN_NAME: Test Admin
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm prisma:generate
+
+      - name: Apply database migrations
+        run: pnpm --filter @backend/api prisma:migrate:deploy
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: E2E tests
+        run: pnpm test:e2e
+
+      - name: Build
+        run: pnpm build
+
+      - name: Verify production image build
+        run: docker build --target production -f docker/api/Dockerfile -t backend-starter-api:ci .

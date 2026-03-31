@@ -1,0 +1,38 @@
+{
+  "name": "backend-starter",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "dev": "docker compose up --build",
+    "dev:detached": "docker compose up --build -d",
+    "down": "docker compose down --remove-orphans",
+    "logs": "docker compose logs -f api",
+    "lint": "pnpm --filter @backend/api lint",
+    "format": "pnpm --filter @backend/api format",
+    "typecheck": "pnpm --filter @backend/api typecheck",
+    "test": "pnpm --filter @backend/api test",
+    "test:e2e": "dotenv -e .env.test -- pnpm --filter @backend/api test:e2e:run",
+    "build": "pnpm --filter @backend/api build",
+    "prisma:generate": "dotenv -e .env.local -- pnpm --filter @backend/api prisma:generate",
+    "prisma:migrate:dev": "dotenv -e .env.local -- pnpm --filter @backend/api prisma:migrate:dev",
+    "prisma:migrate:deploy": "dotenv -e .env.local -- pnpm --filter @backend/api prisma:migrate:deploy",
+    "prisma:seed": "dotenv -e .env.local -- pnpm --filter @backend/api prisma:seed"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "dotenv-cli": "^8.0.0",
+    "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.4.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "prettier": "^3.6.2",
+    "typescript-eslint": "^8.42.0"
+  }
+}

@@ -1,0 +1,184 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Previously validated image tag to promote to production'
+        required: true
+        type: string
+
+env:
+  IMAGE_REPOSITORY: ghcr.io/${{ github.repository_owner }}/backend-starter-api
+
+jobs:
+  build-and-push:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: meta
+        run: echo "image_tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/api/Dockerfile
+          target: production
+          push: true
+          tags: |
+            ${{ env.IMAGE_REPOSITORY }}:${{ steps.meta.outputs.image_tag }}
+            ${{ env.IMAGE_REPOSITORY }}:main
+
+  deploy-staging:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy deployment assets
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.ALIYUN_HOST }}
+          username: ${{ secrets.ALIYUN_USER }}
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          source: 'deploy/compose/server-compose.yml,deploy/scripts/server-deploy.sh'
+          target: '/tmp/backend-deploy/deploy'
+          strip_components: 1
+
+      - name: Deploy staging
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.ALIYUN_HOST }}
+          username: ${{ secrets.ALIYUN_USER }}
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            sudo mkdir -p /srv/backend/staging/compose /srv/backend/staging/env /srv/backend/staging/data/postgres /srv/backend/staging/data/redis /srv/backend/staging/backups/postgres
+            sudo cp /tmp/backend-deploy/deploy/compose/server-compose.yml /srv/backend/staging/compose/docker-compose.yml
+            cat <<'EOF' | sudo tee /srv/backend/staging/env/compose.env >/dev/null
+            COMPOSE_PROJECT_NAME=backend-staging
+            IMAGE_REPOSITORY=${{ env.IMAGE_REPOSITORY }}
+            IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }}
+            HOST_API_PORT=3001
+            AUTO_SEED=true
+            POSTGRES_DB=${{ secrets.STAGING_POSTGRES_DB }}
+            POSTGRES_USER=${{ secrets.STAGING_POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.STAGING_POSTGRES_PASSWORD }}
+            POSTGRES_DATA_DIR=/srv/backend/staging/data/postgres
+            REDIS_DATA_DIR=/srv/backend/staging/data/redis
+            EOF
+            cat <<'EOF' | sudo tee /srv/backend/staging/env/runtime.env >/dev/null
+            NODE_ENV=staging
+            APP_NAME=backend-starter-staging
+            APP_HOST=0.0.0.0
+            PORT=3000
+            API_PREFIX=api/v1
+            LOG_LEVEL=info
+            TRUST_PROXY=true
+            SWAGGER_ENABLED=true
+            CORS_ORIGINS=${{ secrets.STAGING_CORS_ORIGINS }}
+            POSTGRES_DB=${{ secrets.STAGING_POSTGRES_DB }}
+            POSTGRES_USER=${{ secrets.STAGING_POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.STAGING_POSTGRES_PASSWORD }}
+            JWT_ACCESS_SECRET=${{ secrets.STAGING_JWT_ACCESS_SECRET }}
+            JWT_ACCESS_TTL=15m
+            JWT_REFRESH_SECRET=${{ secrets.STAGING_JWT_REFRESH_SECRET }}
+            JWT_REFRESH_TTL=7d
+            DEFAULT_ADMIN_EMAIL=${{ secrets.STAGING_DEFAULT_ADMIN_EMAIL }}
+            DEFAULT_ADMIN_PASSWORD=${{ secrets.STAGING_DEFAULT_ADMIN_PASSWORD }}
+            DEFAULT_ADMIN_NAME=Staging Admin
+            EOF
+            echo "${{ secrets.GHCR_PULL_TOKEN }}" | sudo docker login ghcr.io -u "${{ secrets.GHCR_PULL_USERNAME }}" --password-stdin
+            chmod +x /tmp/backend-deploy/deploy/scripts/server-deploy.sh
+            sudo /tmp/backend-deploy/deploy/scripts/server-deploy.sh staging ${{ needs.build-and-push.outputs.image_tag }}
+
+  deploy-production:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy deployment assets
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.ALIYUN_HOST }}
+          username: ${{ secrets.ALIYUN_USER }}
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          source: 'deploy/compose/server-compose.yml,deploy/scripts/server-deploy.sh'
+          target: '/tmp/backend-deploy/deploy'
+          strip_components: 1
+
+      - name: Deploy production
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.ALIYUN_HOST }}
+          username: ${{ secrets.ALIYUN_USER }}
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            sudo mkdir -p /srv/backend/production/compose /srv/backend/production/env /srv/backend/production/data/postgres /srv/backend/production/data/redis /srv/backend/production/backups/postgres
+            sudo cp /tmp/backend-deploy/deploy/compose/server-compose.yml /srv/backend/production/compose/docker-compose.yml
+            cat <<'EOF' | sudo tee /srv/backend/production/env/compose.env >/dev/null
+            COMPOSE_PROJECT_NAME=backend-production
+            IMAGE_REPOSITORY=${{ env.IMAGE_REPOSITORY }}
+            IMAGE_TAG=${{ github.event.inputs.image_tag }}
+            HOST_API_PORT=3000
+            AUTO_SEED=false
+            POSTGRES_DB=${{ secrets.PRODUCTION_POSTGRES_DB }}
+            POSTGRES_USER=${{ secrets.PRODUCTION_POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.PRODUCTION_POSTGRES_PASSWORD }}
+            POSTGRES_DATA_DIR=/srv/backend/production/data/postgres
+            REDIS_DATA_DIR=/srv/backend/production/data/redis
+            EOF
+            cat <<'EOF' | sudo tee /srv/backend/production/env/runtime.env >/dev/null
+            NODE_ENV=production
+            APP_NAME=backend-starter-production
+            APP_HOST=0.0.0.0
+            PORT=3000
+            API_PREFIX=api/v1
+            LOG_LEVEL=info
+            TRUST_PROXY=true
+            SWAGGER_ENABLED=true
+            CORS_ORIGINS=${{ secrets.PRODUCTION_CORS_ORIGINS }}
+            POSTGRES_DB=${{ secrets.PRODUCTION_POSTGRES_DB }}
+            POSTGRES_USER=${{ secrets.PRODUCTION_POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.PRODUCTION_POSTGRES_PASSWORD }}
+            JWT_ACCESS_SECRET=${{ secrets.PRODUCTION_JWT_ACCESS_SECRET }}
+            JWT_ACCESS_TTL=15m
+            JWT_REFRESH_SECRET=${{ secrets.PRODUCTION_JWT_REFRESH_SECRET }}
+            JWT_REFRESH_TTL=7d
+            DEFAULT_ADMIN_EMAIL=${{ secrets.PRODUCTION_DEFAULT_ADMIN_EMAIL }}
+            DEFAULT_ADMIN_PASSWORD=${{ secrets.PRODUCTION_DEFAULT_ADMIN_PASSWORD }}
+            DEFAULT_ADMIN_NAME=Production Admin
+            EOF
+            echo "${{ secrets.GHCR_PULL_TOKEN }}" | sudo docker login ghcr.io -u "${{ secrets.GHCR_PULL_USERNAME }}" --password-stdin
+            chmod +x /tmp/backend-deploy/deploy/scripts/server-deploy.sh
+            sudo /tmp/backend-deploy/deploy/scripts/server-deploy.sh production ${{ github.event.inputs.image_tag }}

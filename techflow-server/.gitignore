@@ -1,0 +1,17 @@
+node_modules
+.pnpm-store
+dist
+coverage
+.DS_Store
+.idea
+.vscode
+*.log
+.env
+.env.local
+.env.production
+.env.staging
+apps/api/.turbo
+apps/api/prisma/dev.db
+findings.md
+progress.md
+task_plan.md
