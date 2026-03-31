@@ -8,10 +8,7 @@ import '../ui/home_page.dart';
 import '../ui/login_page.dart';
 
 class TechFlowApp extends StatefulWidget {
-  const TechFlowApp({
-    super.key,
-    required this.preferences,
-  });
+  const TechFlowApp({super.key, required this.preferences});
 
   final SharedPreferences preferences;
 
@@ -45,7 +42,8 @@ class _TechFlowAppState extends State<TechFlowApp> {
 
   void _restoreState() {
     final storedEnvironment = widget.preferences.getString(_environmentKey);
-    final storedApiBaseUrl = widget.preferences.getString(_localApiBaseUrlKey) ??
+    final storedApiBaseUrl =
+        widget.preferences.getString(_localApiBaseUrlKey) ??
         widget.preferences.getString(_legacyApiBaseUrlKey);
     final storedServerHost = widget.preferences.getString(_serverHostKey);
     final storedSession = widget.preferences.getString(_sessionKey);
@@ -78,6 +76,33 @@ class _TechFlowAppState extends State<TechFlowApp> {
     await widget.preferences.setString(_sessionKey, session.encode());
   }
 
+  Future<void> _applyAuthenticatedSession(AuthSession session) async {
+    final apiBaseUrl = _environmentConfig.tryResolveApiBaseUrl();
+    AppUser resolvedUser = session.user;
+
+    if (apiBaseUrl != null) {
+      try {
+        final client = ApiClient(baseUrl: apiBaseUrl);
+        resolvedUser = await client.fetchCurrentUser(
+          accessToken: session.tokens.accessToken,
+        );
+      } catch (_) {
+        resolvedUser = session.user;
+      }
+    }
+
+    final resolvedSession = session.copyWith(user: resolvedUser);
+    await _persistSession(resolvedSession);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _session = resolvedSession;
+    });
+  }
+
   Future<void> _selectEnvironment(ApiEnvironment environment) async {
     setState(() {
       _environmentConfig = _environmentConfig.copyWith(
@@ -85,7 +110,10 @@ class _TechFlowAppState extends State<TechFlowApp> {
       );
     });
 
-    await widget.preferences.setString(_environmentKey, environment.storageValue);
+    await widget.preferences.setString(
+      _environmentKey,
+      environment.storageValue,
+    );
   }
 
   Future<void> _updateLocalApiBaseUrl(String nextUrl) async {
@@ -103,9 +131,7 @@ class _TechFlowAppState extends State<TechFlowApp> {
   Future<void> _updateServerHost(String nextHost) async {
     final normalized = normalizeServerHost(nextHost);
     setState(() {
-      _environmentConfig = _environmentConfig.copyWith(
-        serverHost: normalized,
-      );
+      _environmentConfig = _environmentConfig.copyWith(serverHost: normalized);
     });
 
     await widget.preferences.setString(_serverHostKey, normalized);
@@ -128,27 +154,7 @@ class _TechFlowAppState extends State<TechFlowApp> {
     try {
       final client = ApiClient(baseUrl: apiBaseUrl);
       final session = await client.login(credentials);
-
-      AppUser resolvedUser = session.user;
-
-      try {
-        resolvedUser = await client.fetchCurrentUser(
-          accessToken: session.tokens.accessToken,
-        );
-      } catch (_) {
-        resolvedUser = session.user;
-      }
-
-      final resolvedSession = session.copyWith(user: resolvedUser);
-      await _persistSession(resolvedSession);
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _session = resolvedSession;
-      });
+      await _applyAuthenticatedSession(session);
     } finally {
       if (mounted) {
         setState(() {
@@ -158,10 +164,7 @@ class _TechFlowAppState extends State<TechFlowApp> {
     }
   }
 
-  Future<void> _handleLogout({
-    bool notifyServer = true,
-    String? notice,
-  }) async {
+  Future<void> _handleLogout({bool notifyServer = true, String? notice}) async {
     if (_isLoggingOut) {
       return;
     }
@@ -198,10 +201,7 @@ class _TechFlowAppState extends State<TechFlowApp> {
   }
 
   Future<void> _handleSessionExpired() {
-    return _handleLogout(
-      notifyServer: false,
-      notice: '登录状态已失效，请重新登录。',
-    );
+    return _handleLogout(notifyServer: false, notice: '登录状态已失效，请重新登录。');
   }
 
   Future<void> _handleUserSynced(AppUser user) async {
@@ -253,10 +253,7 @@ class _TechFlowAppState extends State<TechFlowApp> {
       title: 'TechFlow',
       theme: baseTheme.copyWith(
         scaffoldBackgroundColor: Colors.transparent,
-        textTheme: baseTheme.textTheme.apply(
-          bodyColor: ink,
-          displayColor: ink,
-        ),
+        textTheme: baseTheme.textTheme.apply(bodyColor: ink, displayColor: ink),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: const Color(0xFFF7F8FA),
@@ -327,26 +324,27 @@ class _TechFlowAppState extends State<TechFlowApp> {
         child: !_isReady
             ? const _SplashScreen()
             : _session == null
-                ? LoginEntryScreen(
-                    key: const ValueKey('login'),
-                    environmentConfig: _environmentConfig,
-                    isSubmitting: _isSubmitting,
-                    noticeMessage: _noticeMessage,
-                    onNoticeShown: _clearNotice,
-                    onSelectEnvironment: _selectEnvironment,
-                    onSaveLocalApiBaseUrl: _updateLocalApiBaseUrl,
-                    onSaveServerHost: _updateServerHost,
-                    onLogin: _handleLogin,
-                  )
-                : HomePage(
-                    key: const ValueKey('home'),
-                    session: _session!,
-                    environmentConfig: _environmentConfig,
-                    isLoggingOut: _isLoggingOut,
-                    onLogout: _handleLogout,
-                    onSessionExpired: _handleSessionExpired,
-                    onUserSynced: _handleUserSynced,
-                  ),
+            ? LoginEntryScreen(
+                key: const ValueKey('login'),
+                environmentConfig: _environmentConfig,
+                isSubmitting: _isSubmitting,
+                noticeMessage: _noticeMessage,
+                onNoticeShown: _clearNotice,
+                onSelectEnvironment: _selectEnvironment,
+                onSaveLocalApiBaseUrl: _updateLocalApiBaseUrl,
+                onSaveServerHost: _updateServerHost,
+                onLogin: _handleLogin,
+                onRegisterSession: _applyAuthenticatedSession,
+              )
+            : HomePage(
+                key: const ValueKey('home'),
+                session: _session!,
+                environmentConfig: _environmentConfig,
+                isLoggingOut: _isLoggingOut,
+                onLogout: _handleLogout,
+                onSessionExpired: _handleSessionExpired,
+                onUserSynced: _handleUserSynced,
+              ),
       ),
     );
   }
@@ -362,11 +360,7 @@ class _SplashScreen extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF07111F),
-            Color(0xFF14324C),
-            Color(0xFFF2E7D6),
-          ],
+          colors: [Color(0xFF07111F), Color(0xFF14324C), Color(0xFFF2E7D6)],
           stops: [0.0, 0.48, 1.0],
         ),
       ),

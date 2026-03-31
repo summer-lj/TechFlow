@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/api_config.dart';
 import '../core/api_client.dart';
 import '../core/models.dart';
+import 'register_webview_page.dart';
 
 class LoginEntryScreen extends StatefulWidget {
   const LoginEntryScreen({
@@ -10,6 +11,7 @@ class LoginEntryScreen extends StatefulWidget {
     required this.environmentConfig,
     required this.isSubmitting,
     required this.onLogin,
+    required this.onRegisterSession,
     required this.onSelectEnvironment,
     required this.onSaveLocalApiBaseUrl,
     required this.onSaveServerHost,
@@ -22,6 +24,7 @@ class LoginEntryScreen extends StatefulWidget {
   final String? noticeMessage;
   final VoidCallback? onNoticeShown;
   final Future<void> Function(LoginCredentials credentials) onLogin;
+  final Future<void> Function(AuthSession session) onRegisterSession;
   final Future<void> Function(ApiEnvironment environment) onSelectEnvironment;
   final Future<void> Function(String baseUrl) onSaveLocalApiBaseUrl;
   final Future<void> Function(String serverHost) onSaveServerHost;
@@ -104,6 +107,35 @@ class _LoginEntryScreenState extends State<LoginEntryScreen> {
     } catch (_) {
       _showSnack('[${environment.label}] $endpoint\n登录失败，请稍后再试。');
     }
+  }
+
+  Future<void> _openRegisterPage() async {
+    if (widget.isSubmitting) {
+      return;
+    }
+
+    final apiBaseUrl = widget.environmentConfig.tryResolveApiBaseUrl();
+
+    if (apiBaseUrl == null) {
+      _showSnack('当前环境还没有配置服务器主机，请先完成环境配置。');
+      return;
+    }
+
+    final session = await Navigator.of(context).push<AuthSession>(
+      MaterialPageRoute(
+        builder: (context) => RegistrationWebViewPage(
+          environmentLabel:
+              widget.environmentConfig.selectedEnvironment.shortLabel,
+          registrationUrl: buildH5RegistrationUrl(apiBaseUrl),
+        ),
+      ),
+    );
+
+    if (session == null) {
+      return;
+    }
+
+    await widget.onRegisterSession(session);
   }
 
   Future<void> _openEndpointSettings() async {
@@ -201,7 +233,8 @@ class _LoginEntryScreenState extends State<LoginEntryScreen> {
                         navigator.pop();
                         final stagingUrl = buildEnvironmentApiBaseUrl(
                           environment: ApiEnvironment.staging,
-                          localApiBaseUrl: widget.environmentConfig.localApiBaseUrl,
+                          localApiBaseUrl:
+                              widget.environmentConfig.localApiBaseUrl,
                           serverHost: controller.text,
                         );
                         _showSnack(
@@ -283,11 +316,7 @@ class _LoginEntryScreenState extends State<LoginEntryScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF07111F),
-              Color(0xFF14324C),
-              Color(0xFFF2E7D6),
-            ],
+            colors: [Color(0xFF07111F), Color(0xFF14324C), Color(0xFFF2E7D6)],
             stops: [0.0, 0.48, 1.0],
           ),
         ),
@@ -370,10 +399,12 @@ class _LoginEntryScreenState extends State<LoginEntryScreen> {
                                     });
                                   },
                                   onPrimaryAction: _submit,
+                                  onOpenRegister: _openRegisterPage,
                                   onFillDemoAccount: _fillDemoAccount,
                                   onConfigureEnvironment: _openEndpointSettings,
                                   onCheckConnection: _checkConnection,
-                                  onSelectEnvironment: widget.onSelectEnvironment,
+                                  onSelectEnvironment:
+                                      widget.onSelectEnvironment,
                                 ),
                               ],
                             )
@@ -409,8 +440,10 @@ class _LoginEntryScreenState extends State<LoginEntryScreen> {
                                       });
                                     },
                                     onPrimaryAction: _submit,
+                                    onOpenRegister: _openRegisterPage,
                                     onFillDemoAccount: _fillDemoAccount,
-                                    onConfigureEnvironment: _openEndpointSettings,
+                                    onConfigureEnvironment:
+                                        _openEndpointSettings,
                                     onCheckConnection: _checkConnection,
                                     onSelectEnvironment:
                                         widget.onSelectEnvironment,
@@ -431,9 +464,7 @@ class _LoginEntryScreenState extends State<LoginEntryScreen> {
 }
 
 class _BrandPanel extends StatelessWidget {
-  const _BrandPanel({
-    required this.environmentConfig,
-  });
+  const _BrandPanel({required this.environmentConfig});
 
   final ApiEnvironmentConfig environmentConfig;
 
@@ -443,22 +474,18 @@ class _BrandPanel extends StatelessWidget {
 
     final titleStyle =
         Theme.of(context).textTheme.displaySmall?.copyWith(
-              color: ink,
-              fontWeight: FontWeight.w800,
-              height: 1.02,
-              letterSpacing: -1.6,
-              fontFamilyFallback: const [
-                'SF Pro Display',
-                'PingFang SC',
-                'Avenir Next',
-                'Roboto',
-              ],
-            ) ??
-            const TextStyle(
-              color: ink,
-              fontSize: 38,
-              fontWeight: FontWeight.w800,
-            );
+          color: ink,
+          fontWeight: FontWeight.w800,
+          height: 1.02,
+          letterSpacing: -1.6,
+          fontFamilyFallback: const [
+            'SF Pro Display',
+            'PingFang SC',
+            'Avenir Next',
+            'Roboto',
+          ],
+        ) ??
+        const TextStyle(color: ink, fontSize: 38, fontWeight: FontWeight.w800);
 
     return Container(
       padding: const EdgeInsets.all(34),
@@ -501,10 +528,7 @@ class _BrandPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 34),
-          Text(
-            '测试环境、生产环境、\n本地联调同页切换。',
-            style: titleStyle,
-          ),
+          Text('测试环境、生产环境、\n本地联调同页切换。', style: titleStyle),
           const SizedBox(height: 16),
           Text(
             '我已经按部署文档把环境拓扑接进 App：本地走开发机，测试环境走服务器 `:8080`，生产环境走默认 `:80`。登录页切换环境后，登录会直接命中对应接口。',
@@ -518,14 +542,16 @@ class _BrandPanel extends StatelessWidget {
           const SizedBox(height: 28),
           _EndpointSummary(
             title: '本地环境',
-            subtitle: environmentConfig.endpointLabel(ApiEnvironment.local) ?? '未配置',
+            subtitle:
+                environmentConfig.endpointLabel(ApiEnvironment.local) ?? '未配置',
             active:
                 environmentConfig.selectedEnvironment == ApiEnvironment.local,
           ),
           const SizedBox(height: 12),
           _EndpointSummary(
             title: '测试环境',
-            subtitle: environmentConfig.endpointLabel(ApiEnvironment.staging) ??
+            subtitle:
+                environmentConfig.endpointLabel(ApiEnvironment.staging) ??
                 '待配置服务器主机 -> http://<服务器主机>:8080',
             active:
                 environmentConfig.selectedEnvironment == ApiEnvironment.staging,
@@ -533,9 +559,11 @@ class _BrandPanel extends StatelessWidget {
           const SizedBox(height: 12),
           _EndpointSummary(
             title: '生产环境',
-            subtitle: environmentConfig.endpointLabel(ApiEnvironment.production) ??
+            subtitle:
+                environmentConfig.endpointLabel(ApiEnvironment.production) ??
                 '待配置服务器主机 -> http://<服务器主机>',
-            active: environmentConfig.selectedEnvironment ==
+            active:
+                environmentConfig.selectedEnvironment ==
                 ApiEnvironment.production,
           ),
         ],
@@ -557,6 +585,7 @@ class _LoginPanel extends StatelessWidget {
     required this.onRememberChanged,
     required this.onPasswordVisibilityPressed,
     required this.onPrimaryAction,
+    required this.onOpenRegister,
     required this.onFillDemoAccount,
     required this.onConfigureEnvironment,
     required this.onCheckConnection,
@@ -574,6 +603,7 @@ class _LoginPanel extends StatelessWidget {
   final VoidCallback onRememberChanged;
   final VoidCallback onPasswordVisibilityPressed;
   final Future<void> Function() onPrimaryAction;
+  final Future<void> Function() onOpenRegister;
   final VoidCallback onFillDemoAccount;
   final VoidCallback onConfigureEnvironment;
   final Future<void> Function() onCheckConnection;
@@ -610,14 +640,14 @@ class _LoginPanel extends StatelessWidget {
             Text(
               '欢迎回来',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: ink,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.8,
-                  ),
+                color: ink,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.8,
+              ),
             ),
             const SizedBox(height: 10),
             Text(
-              '当前登录已接入真实后端接口。你可以在这里切到本地、测试环境或生产环境，再直接执行登录。',
+              '当前登录和注册都已接入真实后端接口。你可以在这里切到本地、测试环境或生产环境，再直接执行登录或打开 H5 注册。',
               style: TextStyle(
                 color: ink.withValues(alpha: 0.66),
                 fontSize: 15,
@@ -864,8 +894,8 @@ class _LoginPanel extends StatelessWidget {
               onPressed: isSubmitting
                   ? null
                   : canLogin
-                      ? onPrimaryAction
-                      : onConfigureEnvironment,
+                  ? onPrimaryAction
+                  : onConfigureEnvironment,
               icon: isSubmitting
                   ? const SizedBox(
                       width: 18,
@@ -884,8 +914,26 @@ class _LoginPanel extends StatelessWidget {
                 isSubmitting
                     ? '登录中...'
                     : canLogin
-                        ? '登录并进入${selectedEnvironment.label}'
-                        : '先配置${selectedEnvironment.label}',
+                    ? '登录并进入${selectedEnvironment.label}'
+                    : '先配置${selectedEnvironment.label}',
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: isSubmitting
+                  ? null
+                  : canLogin
+                  ? () {
+                      onOpenRegister();
+                    }
+                  : onConfigureEnvironment,
+              icon: Icon(
+                canLogin
+                    ? Icons.app_registration_rounded
+                    : Icons.settings_input_component_rounded,
+              ),
+              label: Text(
+                canLogin ? '打开 H5 注册页' : '先配置${selectedEnvironment.label}再注册',
               ),
             ),
             const SizedBox(height: 20),
@@ -914,7 +962,7 @@ class _LoginPanel extends StatelessWidget {
                   const SizedBox(width: 14),
                   Expanded(
                     child: Text(
-                      '仓库部署规则：staging 对外端口 8080，production 对外端口 80。默认演示账号仍是 13965026764 / 123456，本地环境已经验证可登录。',
+                      '仓库部署规则：staging 对外端口 8080，production 对外端口 80。默认演示账号仍是 13965026764 / 123456；新用户也可以通过上面的 H5 注册页直接入库，再自动回到 App。',
                       style: TextStyle(
                         color: ink.withValues(alpha: 0.74),
                         height: 1.55,

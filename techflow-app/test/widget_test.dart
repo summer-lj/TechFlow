@@ -32,6 +32,13 @@ void main() {
     );
   });
 
+  test('registration h5 url follows selected api base', () {
+    expect(
+      buildH5RegistrationUrl('http://172.16.81.118:3000/api/v1'),
+      'http://172.16.81.118:3000/h5/register/techflow-app?apiBase=http%3A%2F%2F172.16.81.118%3A3000%2Fapi%2Fv1&embedded=1&source=app',
+    );
+  });
+
   testWidgets('login page renders real login flow', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -46,6 +53,7 @@ void main() {
           onSaveLocalApiBaseUrl: (_) async {},
           onSaveServerHost: (_) async {},
           onLogin: (_) async {},
+          onRegisterSession: (_) async {},
         ),
       ),
     );
@@ -55,6 +63,7 @@ void main() {
     expect(find.text('TechFlow Mobile Workspace'), findsOneWidget);
     expect(find.text('欢迎回来'), findsOneWidget);
     expect(find.text('登录并进入本地环境'), findsOneWidget);
+    expect(find.text('打开 H5 注册页'), findsOneWidget);
     expect(find.text('填充演示账号'), findsOneWidget);
     expect(find.text('手机号'), findsOneWidget);
     expect(find.text('登录密码'), findsOneWidget);

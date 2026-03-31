@@ -1,8 +1,11 @@
-const String _compileTimeLocalApiBaseUrl = String.fromEnvironment('API_BASE_URL');
+const String _compileTimeLocalApiBaseUrl = String.fromEnvironment(
+  'API_BASE_URL',
+);
 const String _compileTimeServerHost = String.fromEnvironment('SERVER_HOST');
 const String _fallbackLocalApiBaseUrl = 'http://172.16.81.118:3000/api/v1';
 const String _fallbackServerHost = '101.133.135.17';
 const String _pinnedProductionHost = '101.133.135.17';
+const String _defaultH5RegistrationBusiness = 'techflow-app';
 
 enum ApiEnvironment {
   local,
@@ -108,14 +111,16 @@ class ApiEnvironmentConfig {
 }
 
 String resolveInitialLocalApiBaseUrl() {
-  final candidate =
-      _compileTimeLocalApiBaseUrl.isNotEmpty ? _compileTimeLocalApiBaseUrl : _fallbackLocalApiBaseUrl;
+  final candidate = _compileTimeLocalApiBaseUrl.isNotEmpty
+      ? _compileTimeLocalApiBaseUrl
+      : _fallbackLocalApiBaseUrl;
   return normalizeApiBaseUrl(candidate);
 }
 
 String resolveInitialServerHost() {
-  final candidate =
-      _compileTimeServerHost.trim().isNotEmpty ? _compileTimeServerHost.trim() : _fallbackServerHost;
+  final candidate = _compileTimeServerHost.trim().isNotEmpty
+      ? _compileTimeServerHost.trim()
+      : _fallbackServerHost;
 
   return normalizeServerHost(candidate);
 }
@@ -168,10 +173,7 @@ String normalizeServerHost(String input) {
     throw const FormatException('请输入有效的公网 IP 或域名');
   }
 
-  return Uri(
-    scheme: uri.scheme,
-    host: uri.host,
-  ).toString();
+  return Uri(scheme: uri.scheme, host: uri.host).toString();
 }
 
 String buildEnvironmentApiBaseUrl({
@@ -193,6 +195,21 @@ String describeApiEndpoint(String baseUrl) {
   final uri = Uri.parse(normalizeApiBaseUrl(baseUrl));
   final portSuffix = uri.hasPort ? ':${uri.port}' : '';
   return '${uri.scheme}://${uri.host}$portSuffix';
+}
+
+String buildH5RegistrationUrl(String apiBaseUrl) {
+  final uri = Uri.parse(normalizeApiBaseUrl(apiBaseUrl));
+
+  return uri
+      .replace(
+        path: '/h5/register/$_defaultH5RegistrationBusiness',
+        queryParameters: {
+          'apiBase': uri.toString(),
+          'embedded': '1',
+          'source': 'app',
+        },
+      )
+      .toString();
 }
 
 String _buildRemoteApiBaseUrl(String serverHost, {int? port}) {
