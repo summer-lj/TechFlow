@@ -5,6 +5,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { randomUUID } from 'crypto';
 
 import { AppClientModule } from './app-client/app-client.module';
+import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { ClientConfigModule } from './client-config/client-config.module';
 import { validateEnv } from './config/env.validation';
@@ -64,6 +65,7 @@ import { UsersModule } from './users/users.module';
     PrismaModule,
     RedisModule,
     HealthModule,
+    AdminModule,
     ClientConfigModule,
     SiteModule,
     UsersModule,
