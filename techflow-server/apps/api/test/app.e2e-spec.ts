@@ -32,8 +32,9 @@ describe('API starter (e2e)', () => {
     await prismaService.user.create({
       data: {
         email: 'e2e@example.com',
+        phone: '13965026764',
         name: 'E2E User',
-        passwordHash: await bcrypt.hash('ChangeMe123!', 10),
+        passwordHash: await bcrypt.hash('123456', 10),
         role: Role.ADMIN,
         isActive: true,
       },
@@ -107,8 +108,8 @@ describe('API starter (e2e)', () => {
     const loginResponse = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({
-        email: 'e2e@example.com',
-        password: 'ChangeMe123!',
+        phone: '13965026764',
+        password: '123456',
       })
       .expect(200);
 
@@ -128,8 +129,8 @@ describe('API starter (e2e)', () => {
     const loginResponse = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({
-        email: 'e2e@example.com',
-        password: 'ChangeMe123!',
+        phone: '13965026764',
+        password: '123456',
       })
       .expect(200);
 
@@ -151,8 +152,8 @@ describe('API starter (e2e)', () => {
     const loginResponse = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({
-        email: 'e2e@example.com',
-        password: 'ChangeMe123!',
+        phone: '13965026764',
+        password: '123456',
       })
       .expect(200);
 
@@ -181,7 +182,7 @@ describe('API starter (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({
-        email: 'not-an-email',
+        phone: 'not-a-phone',
         password: '123',
       })
       .expect(400);

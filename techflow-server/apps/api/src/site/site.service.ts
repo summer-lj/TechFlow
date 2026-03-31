@@ -60,10 +60,10 @@ export class SiteService {
       },
       {
         audience: 'Auth',
-        name: '管理员登录',
+        name: '管理员手机号登录',
         method: 'POST',
         path: '/api/v1/auth/login',
-        description: '后台管理端、运营工具、调试页面都通过这条接口获取访问令牌。',
+        description: '后台管理端和 App 通过手机号加密码登录，获取访问令牌。',
       },
       {
         audience: 'Auth',

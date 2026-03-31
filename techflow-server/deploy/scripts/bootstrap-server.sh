@@ -46,8 +46,8 @@ install_nginx() {
 }
 
 prepare_directories() {
-  run_as_root mkdir -p "${BASE_DIR}/staging/compose" "${BASE_DIR}/staging/env" "${BASE_DIR}/staging/data/postgres" "${BASE_DIR}/staging/data/redis" "${BASE_DIR}/staging/backups/postgres"
-  run_as_root mkdir -p "${BASE_DIR}/production/compose" "${BASE_DIR}/production/env" "${BASE_DIR}/production/data/postgres" "${BASE_DIR}/production/data/redis" "${BASE_DIR}/production/backups/postgres"
+  run_as_root mkdir -p "${BASE_DIR}/staging/compose" "${BASE_DIR}/staging/env" "${BASE_DIR}/staging/data/postgres" "${BASE_DIR}/staging/data/redis" "${BASE_DIR}/staging/backups/postgres" "${BASE_DIR}/staging/admin/dist"
+  run_as_root mkdir -p "${BASE_DIR}/production/compose" "${BASE_DIR}/production/env" "${BASE_DIR}/production/data/postgres" "${BASE_DIR}/production/data/redis" "${BASE_DIR}/production/backups/postgres" "${BASE_DIR}/production/admin/dist"
   run_as_root cp "${COMPOSE_TEMPLATE}" "${BASE_DIR}/staging/compose/docker-compose.yml"
   run_as_root cp "${COMPOSE_TEMPLATE}" "${BASE_DIR}/production/compose/docker-compose.yml"
 }

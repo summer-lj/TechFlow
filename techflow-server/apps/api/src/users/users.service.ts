@@ -19,6 +19,12 @@ export class UsersService {
     });
   }
 
+  async findByPhone(phone: string) {
+    return this.prismaService.user.findUnique({
+      where: { phone: phone.replace(/\D/g, '') },
+    });
+  }
+
   toPublicUser(user: User): PublicUser {
     const { passwordHash: _passwordHash, ...safeUser } = user;
     return safeUser;

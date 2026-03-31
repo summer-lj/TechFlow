@@ -51,7 +51,7 @@ make init
 
 默认管理员账号来自 `.env.local`：
 
-- 邮箱：`DEFAULT_ADMIN_EMAIL`
+- 手机号：`DEFAULT_ADMIN_PHONE`
 - 密码：`DEFAULT_ADMIN_PASSWORD`
 
 在页面右侧管理员演示台：

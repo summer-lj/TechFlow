@@ -24,6 +24,7 @@ interface EnvironmentVariables {
   JWT_REFRESH_SECRET: string;
   JWT_REFRESH_TTL: string;
   DEFAULT_ADMIN_EMAIL: string;
+  DEFAULT_ADMIN_PHONE: string;
   DEFAULT_ADMIN_PASSWORD: string;
   DEFAULT_ADMIN_NAME: string;
   AUTO_MIGRATE: boolean;
@@ -61,7 +62,10 @@ export function validateEnv(config: Record<string, unknown>) {
     JWT_REFRESH_SECRET: Joi.string().min(12).required(),
     JWT_REFRESH_TTL: Joi.string().default('7d'),
     DEFAULT_ADMIN_EMAIL: Joi.string().email().required(),
-    DEFAULT_ADMIN_PASSWORD: Joi.string().min(8).required(),
+    DEFAULT_ADMIN_PHONE: Joi.string()
+      .pattern(/^1\d{10}$/)
+      .default('13965026764'),
+    DEFAULT_ADMIN_PASSWORD: Joi.string().min(6).required(),
     DEFAULT_ADMIN_NAME: Joi.string().required(),
     AUTO_MIGRATE: Joi.boolean().truthy('true').falsy('false').default(false),
     AUTO_SEED: Joi.boolean().truthy('true').falsy('false').default(false),

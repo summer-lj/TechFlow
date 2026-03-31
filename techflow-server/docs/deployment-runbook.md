@@ -97,6 +97,7 @@ chmod +x deploy/scripts/bootstrap-server.sh
 
 - `http://<公网IP>:8080/health`
 - `http://<公网IP>:8080/docs`
+- `http://<公网IP>:8080/admin/`
 
 ### 手动晋升到 production
 
@@ -109,6 +110,7 @@ chmod +x deploy/scripts/bootstrap-server.sh
 
 - `http://<公网IP>/health`
 - `http://<公网IP>/docs`
+- `http://<公网IP>/admin/`
 
 ## 回滚
 

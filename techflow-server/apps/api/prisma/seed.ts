@@ -2,23 +2,40 @@ import { PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
+const normalizePhone = (value: string) => value.replace(/\D/g, '');
 
 async function main() {
-  const email = (process.env.DEFAULT_ADMIN_EMAIL ?? 'founder@example.com').toLowerCase();
+  const phone = normalizePhone(process.env.DEFAULT_ADMIN_PHONE ?? '13965026764');
+  const email = (process.env.DEFAULT_ADMIN_EMAIL ?? `${phone}@techflow.local`).toLowerCase();
   const name = process.env.DEFAULT_ADMIN_NAME ?? 'Founder Admin';
-  const password = process.env.DEFAULT_ADMIN_PASSWORD ?? 'ChangeMe123!';
+  const password = process.env.DEFAULT_ADMIN_PASSWORD ?? '123456';
   const passwordHash = await bcrypt.hash(password, 10);
-
-  await prisma.user.upsert({
-    where: { email },
-    update: {
-      name,
-      passwordHash,
-      role: Role.ADMIN,
-      isActive: true,
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [{ phone }, { email }],
     },
-    create: {
+  });
+
+  if (existingUser) {
+    await prisma.user.update({
+      where: { id: existingUser.id },
+      data: {
+        email,
+        phone,
+        name,
+        passwordHash,
+        role: Role.ADMIN,
+        isActive: true,
+      },
+    });
+
+    return;
+  }
+
+  await prisma.user.create({
+    data: {
       email,
+      phone,
       name,
       passwordHash,
       role: Role.ADMIN,

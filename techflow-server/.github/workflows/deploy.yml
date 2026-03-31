@@ -61,14 +61,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Build admin
+        run: |
+          pnpm install --dir techflow-admin --frozen-lockfile
+          VITE_APP_BASE=/admin/ VITE_ROUTER_BASENAME=/admin pnpm --dir techflow-admin build
+
       - name: Copy deployment assets
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.ALIYUN_HOST }}
           username: ${{ secrets.ALIYUN_USER }}
           key: ${{ secrets.ALIYUN_SSH_KEY }}
-          source: 'deploy/compose/server-compose.yml,deploy/scripts/server-deploy.sh'
+          source: 'deploy/compose/server-compose.yml,deploy/scripts/server-deploy.sh,deploy/nginx/backend-ip.conf'
           target: '/tmp/backend-deploy/deploy'
+          strip_components: 1
+
+      - name: Copy admin build
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.ALIYUN_HOST }}
+          username: ${{ secrets.ALIYUN_USER }}
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          source: 'techflow-admin/dist'
+          target: '/tmp/backend-deploy/admin'
           strip_components: 1
 
       - name: Deploy staging
@@ -79,8 +104,12 @@ jobs:
           key: ${{ secrets.ALIYUN_SSH_KEY }}
           script: |
             set -euo pipefail
-            sudo mkdir -p /srv/backend/staging/compose /srv/backend/staging/env /srv/backend/staging/data/postgres /srv/backend/staging/data/redis /srv/backend/staging/backups/postgres
+            sudo mkdir -p /srv/backend/staging/compose /srv/backend/staging/env /srv/backend/staging/data/postgres /srv/backend/staging/data/redis /srv/backend/staging/backups/postgres /srv/backend/staging/admin/dist
             sudo cp /tmp/backend-deploy/deploy/compose/server-compose.yml /srv/backend/staging/compose/docker-compose.yml
+            sudo cp /tmp/backend-deploy/deploy/nginx/backend-ip.conf /etc/nginx/sites-available/backend-ip.conf
+            sudo ln -sf /etc/nginx/sites-available/backend-ip.conf /etc/nginx/sites-enabled/backend-ip.conf
+            sudo rm -rf /srv/backend/staging/admin/dist/*
+            sudo cp -r /tmp/backend-deploy/admin/dist/. /srv/backend/staging/admin/dist/
             cat <<'EOF' | sudo tee /srv/backend/staging/env/compose.env >/dev/null
             COMPOSE_PROJECT_NAME=backend-staging
             IMAGE_REPOSITORY=${{ env.IMAGE_REPOSITORY }}
@@ -106,6 +135,7 @@ jobs:
             POSTGRES_DB=${{ secrets.STAGING_POSTGRES_DB }}
             POSTGRES_USER=${{ secrets.STAGING_POSTGRES_USER }}
             POSTGRES_PASSWORD=${{ secrets.STAGING_POSTGRES_PASSWORD }}
+            DEFAULT_ADMIN_PHONE=13965026764
             JWT_ACCESS_SECRET=${{ secrets.STAGING_JWT_ACCESS_SECRET }}
             JWT_ACCESS_TTL=15m
             JWT_REFRESH_SECRET=${{ secrets.STAGING_JWT_REFRESH_SECRET }}
@@ -117,6 +147,8 @@ jobs:
             echo "${{ secrets.GHCR_PULL_TOKEN }}" | sudo docker login ghcr.io -u "${{ secrets.GHCR_PULL_USERNAME }}" --password-stdin
             chmod +x /tmp/backend-deploy/deploy/scripts/server-deploy.sh
             sudo /tmp/backend-deploy/deploy/scripts/server-deploy.sh staging ${{ needs.build-and-push.outputs.image_tag }}
+            sudo nginx -t
+            sudo systemctl reload nginx
 
   deploy-production:
     if: github.event_name == 'workflow_dispatch'
@@ -126,14 +158,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Build admin
+        run: |
+          pnpm install --dir techflow-admin --frozen-lockfile
+          VITE_APP_BASE=/admin/ VITE_ROUTER_BASENAME=/admin pnpm --dir techflow-admin build
+
       - name: Copy deployment assets
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.ALIYUN_HOST }}
           username: ${{ secrets.ALIYUN_USER }}
           key: ${{ secrets.ALIYUN_SSH_KEY }}
-          source: 'deploy/compose/server-compose.yml,deploy/scripts/server-deploy.sh'
+          source: 'deploy/compose/server-compose.yml,deploy/scripts/server-deploy.sh,deploy/nginx/backend-ip.conf'
           target: '/tmp/backend-deploy/deploy'
+          strip_components: 1
+
+      - name: Copy admin build
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.ALIYUN_HOST }}
+          username: ${{ secrets.ALIYUN_USER }}
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          source: 'techflow-admin/dist'
+          target: '/tmp/backend-deploy/admin'
           strip_components: 1
 
       - name: Deploy production
@@ -144,8 +201,12 @@ jobs:
           key: ${{ secrets.ALIYUN_SSH_KEY }}
           script: |
             set -euo pipefail
-            sudo mkdir -p /srv/backend/production/compose /srv/backend/production/env /srv/backend/production/data/postgres /srv/backend/production/data/redis /srv/backend/production/backups/postgres
+            sudo mkdir -p /srv/backend/production/compose /srv/backend/production/env /srv/backend/production/data/postgres /srv/backend/production/data/redis /srv/backend/production/backups/postgres /srv/backend/production/admin/dist
             sudo cp /tmp/backend-deploy/deploy/compose/server-compose.yml /srv/backend/production/compose/docker-compose.yml
+            sudo cp /tmp/backend-deploy/deploy/nginx/backend-ip.conf /etc/nginx/sites-available/backend-ip.conf
+            sudo ln -sf /etc/nginx/sites-available/backend-ip.conf /etc/nginx/sites-enabled/backend-ip.conf
+            sudo rm -rf /srv/backend/production/admin/dist/*
+            sudo cp -r /tmp/backend-deploy/admin/dist/. /srv/backend/production/admin/dist/
             cat <<'EOF' | sudo tee /srv/backend/production/env/compose.env >/dev/null
             COMPOSE_PROJECT_NAME=backend-production
             IMAGE_REPOSITORY=${{ env.IMAGE_REPOSITORY }}
@@ -171,6 +232,7 @@ jobs:
             POSTGRES_DB=${{ secrets.PRODUCTION_POSTGRES_DB }}
             POSTGRES_USER=${{ secrets.PRODUCTION_POSTGRES_USER }}
             POSTGRES_PASSWORD=${{ secrets.PRODUCTION_POSTGRES_PASSWORD }}
+            DEFAULT_ADMIN_PHONE=13965026764
             JWT_ACCESS_SECRET=${{ secrets.PRODUCTION_JWT_ACCESS_SECRET }}
             JWT_ACCESS_TTL=15m
             JWT_REFRESH_SECRET=${{ secrets.PRODUCTION_JWT_REFRESH_SECRET }}
@@ -182,3 +244,5 @@ jobs:
             echo "${{ secrets.GHCR_PULL_TOKEN }}" | sudo docker login ghcr.io -u "${{ secrets.GHCR_PULL_USERNAME }}" --password-stdin
             chmod +x /tmp/backend-deploy/deploy/scripts/server-deploy.sh
             sudo /tmp/backend-deploy/deploy/scripts/server-deploy.sh production ${{ github.event.inputs.image_tag }}
+            sudo nginx -t
+            sudo systemctl reload nginx

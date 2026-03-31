@@ -39,7 +39,7 @@ TechFlow 的共享后端与平台服务层。
 3. 查看接口文档：`http://localhost:3000/docs`
 4. 健康检查：`http://localhost:3000/health`
 5. 打开演示网页：`http://localhost:3000/demo`
-6. 默认管理员账号来自 `.env.local` 中的 `DEFAULT_ADMIN_EMAIL` 和 `DEFAULT_ADMIN_PASSWORD`
+6. 默认管理员登录账号来自 `.env.local` 中的 `DEFAULT_ADMIN_PHONE` 和 `DEFAULT_ADMIN_PASSWORD`
 
 ## 项目目录说明
 

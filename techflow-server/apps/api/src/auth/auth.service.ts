@@ -23,7 +23,7 @@ export class AuthService {
   ) {}
 
   async login(loginDto: LoginDto) {
-    const user = await this.validateUser(loginDto.email, loginDto.password);
+    const user = await this.validateUser(loginDto.phone, loginDto.password);
 
     return {
       message: 'Login successful',
@@ -76,8 +76,8 @@ export class AuthService {
     };
   }
 
-  async validateUser(email: string, password: string) {
-    const user = await this.usersService.findByEmail(email);
+  async validateUser(phone: string, password: string) {
+    const user = await this.usersService.findByPhone(phone);
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Invalid credentials');

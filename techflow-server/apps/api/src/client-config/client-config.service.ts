@@ -51,6 +51,8 @@ export class ClientConfigService {
         apiBasePath: '/api/v1',
       },
       auth: {
+        loginMode: 'phone_password',
+        accountField: 'phone',
         loginPath: '/api/v1/auth/login',
         refreshPath: '/api/v1/auth/refresh',
         logoutPath: '/api/v1/auth/logout',

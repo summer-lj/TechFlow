@@ -16,6 +16,7 @@ describe('AuthService', () => {
   const mockUser = {
     id: 'user_123',
     email: 'founder@example.com',
+    phone: '13965026764',
     name: 'Founder',
     passwordHash: 'hashed-password',
     role: Role.ADMIN,
@@ -25,7 +26,7 @@ describe('AuthService', () => {
   };
 
   const usersService = {
-    findByEmail: jest.fn(),
+    findByPhone: jest.fn(),
     findById: jest.fn(),
     toPublicUser: jest.fn(),
   } as unknown as jest.Mocked<UsersService>;
@@ -67,10 +68,11 @@ describe('AuthService', () => {
   });
 
   it('logs in a valid user and stores a refresh session', async () => {
-    usersService.findByEmail.mockResolvedValue(mockUser);
+    usersService.findByPhone.mockResolvedValue(mockUser);
     usersService.toPublicUser.mockReturnValue({
       id: mockUser.id,
       email: mockUser.email,
+      phone: mockUser.phone,
       name: mockUser.name,
       role: mockUser.role,
       isActive: mockUser.isActive,
@@ -84,8 +86,8 @@ describe('AuthService', () => {
     mockedBcrypt.hash.mockResolvedValue('hashed-refresh-token' as never);
 
     const result = await authService.login({
-      email: mockUser.email,
-      password: 'ChangeMe123!',
+      phone: mockUser.phone,
+      password: '123456',
     });
 
     expect(result.message).toBe('Login successful');
@@ -95,12 +97,12 @@ describe('AuthService', () => {
   });
 
   it('rejects invalid passwords', async () => {
-    usersService.findByEmail.mockResolvedValue(mockUser);
+    usersService.findByPhone.mockResolvedValue(mockUser);
     mockedBcrypt.compare.mockResolvedValue(false as never);
 
     await expect(
       authService.login({
-        email: mockUser.email,
+        phone: mockUser.phone,
         password: 'wrong-password',
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);

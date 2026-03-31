@@ -9,9 +9,11 @@ import { LoginPage } from './pages/LoginPage';
 import { SystemPage } from './pages/SystemPage';
 
 export default function App() {
+  const routerBasename = import.meta.env.VITE_ROUTER_BASENAME ?? '/';
+
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={routerBasename}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute />}>

@@ -80,12 +80,12 @@ export function getDemoPageHtml() {
           </div>
           <form id="login-form" class="form-grid">
             <label>
-              管理员邮箱
-              <input name="email" value="founder@example.com" required />
+              管理员手机号
+              <input name="phone" type="tel" value="13965026764" required />
             </label>
             <label>
               管理员密码
-              <input name="password" type="password" value="ChangeMe123!" required />
+              <input name="password" type="password" value="123456" required />
             </label>
             <button type="submit" class="button button-secondary">登录并保存 Token</button>
           </form>
