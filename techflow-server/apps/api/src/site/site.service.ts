@@ -67,6 +67,13 @@ export class SiteService {
       },
       {
         audience: 'Auth',
+        name: '手机号注册',
+        method: 'POST',
+        path: '/api/v1/auth/register',
+        description: 'H5 注册页通过手机号和密码直接创建用户，并返回可直接登录的会话。',
+      },
+      {
+        audience: 'Auth',
         name: '读取当前用户',
         method: 'GET',
         path: '/api/v1/users/me',

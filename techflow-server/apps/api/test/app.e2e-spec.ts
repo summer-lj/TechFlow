@@ -148,6 +148,31 @@ describe('API starter (e2e)', () => {
     expect(meResponse.body.data.email).toBe('e2e@example.com');
   });
 
+  it('registers a new user and allows app login with the new account', async () => {
+    const registerResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({
+        phone: '13965026765',
+        password: '123456',
+      })
+      .expect(201);
+
+    expect(registerResponse.body.success).toBe(true);
+    expect(registerResponse.body.data.user.phone).toBe('13965026765');
+    expect(registerResponse.body.data.tokens.accessToken).toBeDefined();
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({
+        phone: '13965026765',
+        password: '123456',
+      })
+      .expect(200);
+
+    expect(loginResponse.body.success).toBe(true);
+    expect(loginResponse.body.data.user.role).toBe(Role.USER);
+  });
+
   it('refreshes a token', async () => {
     const loginResponse = await request(app.getHttpServer())
       .post('/api/v1/auth/login')

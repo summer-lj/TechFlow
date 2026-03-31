@@ -13,40 +13,40 @@
 ## 项目结构
 
 - `techflow-server`
-  TechFlow 的共享后端与平台服务层，当前已经包含 NestJS API、共享配置模块和 App 独立接口模块。
+TechFlow 的共享后端与平台服务层，当前已经包含 NestJS API、共享配置模块和 App 独立接口模块。
 - `techflow-admin`
-  面向内部运营、客服、内容管理、数据查看的后台管理系统。
+面向内部运营、客服、内容管理、数据查看的后台管理系统。
 - `techflow-app`
-  面向终端用户的手机 App。
+面向终端用户的手机 App。
 - `techflow-h5`
-  面向活动页、落地页、分享页、轻交互页面的 H5 应用。
+面向活动页、落地页、分享页、轻交互页面的 H5 应用。
 - `techflow-mini`
-  面向微信等生态的小程序客户端。
+面向微信等生态的小程序客户端。
 - `docs`
-  项目级架构说明和协作约定。
+项目级架构说明和协作约定。
 
 ## 当前结构说明
 
 当前仓库已经完成“多端目录 + 共享后端”的基础分层：
 
 - `techflow-server`
-  当前唯一有实质代码的模块，负责共享业务服务。
+当前唯一有实质代码的模块，负责共享业务服务。
 - `techflow-server/apps/api/src/auth`
-  统一登录、刷新 token、退出登录等账号能力。
+统一登录、刷新 token、退出登录等账号能力。
 - `techflow-server/apps/api/src/users`
-  当前用户和用户基础资料接口。
+当前用户和用户基础资料接口。
 - `techflow-server/apps/api/src/health`
-  健康检查和依赖探活。
+健康检查和依赖探活。
 - `techflow-server/apps/api/src/client-config`
-  多端共享的启动配置和公共能力目录。
+多端共享的启动配置和公共能力目录。
 - `techflow-server/apps/api/src/app-client`
-  App 独立接口模块，负责移动端聚合接口，不直接承载底层业务真相。
+App 独立接口模块，负责移动端聚合接口，不直接承载底层业务真相。
 - `techflow-server/apps/api/src/site`
-  当前仍保留的 demo/公开接口模块，后续会继续拆分为更稳定的业务边界。
+当前仍保留的 demo/公开接口模块，后续会继续拆分为更稳定的业务边界。
 - `docs/architecture.md`
-  项目级职责、模块边界和整体架构说明。
+项目级职责、模块边界和整体架构说明。
 - `docs/multi-client-api-design.md`
-  多端 API 分层、BFF 设计和未来可拆服务的实施方案。
+多端 API 分层、BFF 设计和未来可拆服务的实施方案。
 
 ## 模块职责边界
 
@@ -88,13 +88,13 @@
 当前后端模块以 `auth / users / site / health` 为主，其中 `site` 同时承载了公开配置、演示页面、线索表单和接口目录，偏向 starter/demo 结构。为了让后端真正服务其他模块，建议做下面的职责拆分：
 
 1. 保留平台基础模块：
-   `auth`、`users`、`health`、`common`、`config`、`prisma`、`redis`
+  `auth`、`users`、`health`、`common`、`config`、`prisma`、`redis`
 2. 将 `site` 拆成更稳定的业务边界：
-   `marketing`、`client-config`、`demo`
+  `marketing`、`client-config`、`demo`
 3. 新增面向多端协作的模块：
-   `admin`、`media`、`notification`、`integration`
+  `admin`、`media`、`notification`、`integration`
 4. 把演示页面能力降级为临时模块：
-   `/demo` 只用于联调或演示，不作为正式业务入口继续扩展
+  `/demo` 只用于联调或演示，不作为正式业务入口继续扩展
 
 更详细的职责说明见 [docs/architecture.md](/Users/liujun/liujun/TechFlow/docs/architecture.md)。
 
@@ -114,3 +114,4 @@
 ## 初始化
 
 - `2026-03-31` 项目创建
+

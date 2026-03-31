@@ -1,4 +1,4 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import type { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -28,6 +28,7 @@ describe('AuthService', () => {
   const usersService = {
     findByPhone: jest.fn(),
     findById: jest.fn(),
+    createRegisteredUser: jest.fn(),
     toPublicUser: jest.fn(),
   } as unknown as jest.Mocked<UsersService>;
 
@@ -106,5 +107,53 @@ describe('AuthService', () => {
         password: 'wrong-password',
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('registers a new user and returns a ready-to-use session', async () => {
+    usersService.findByPhone.mockResolvedValue(null);
+    usersService.createRegisteredUser.mockResolvedValue({
+      ...mockUser,
+      role: Role.USER,
+    });
+    usersService.toPublicUser.mockReturnValue({
+      id: mockUser.id,
+      email: mockUser.email,
+      phone: mockUser.phone,
+      name: mockUser.name,
+      role: Role.USER,
+      isActive: mockUser.isActive,
+      createdAt: mockUser.createdAt,
+      updatedAt: mockUser.updatedAt,
+    });
+    jwtService.signAsync
+      .mockResolvedValueOnce('register-access-token')
+      .mockResolvedValueOnce('register-refresh-token');
+    mockedBcrypt.hash
+      .mockResolvedValueOnce('hashed-password' as never)
+      .mockResolvedValueOnce('hashed-refresh-token' as never);
+
+    const result = await authService.register({
+      phone: '13965026765',
+      password: '123456',
+    });
+
+    expect(result.message).toBe('Registration successful');
+    expect(usersService.createRegisteredUser).toHaveBeenCalledWith({
+      phone: '13965026765',
+      passwordHash: 'hashed-password',
+    });
+    expect(result.data.tokens.accessToken).toBe('register-access-token');
+    expect(result.data.tokens.refreshToken).toBe('register-refresh-token');
+  });
+
+  it('rejects duplicate phone registration', async () => {
+    usersService.findByPhone.mockResolvedValue(mockUser);
+
+    await expect(
+      authService.register({
+        phone: mockUser.phone,
+        password: '123456',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 });

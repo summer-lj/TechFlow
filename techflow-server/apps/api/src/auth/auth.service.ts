@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { User } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -10,6 +10,7 @@ import { UsersService } from '../users/users.service';
 import type { LoginDto } from './dto/login.dto';
 import type { LogoutDto } from './dto/logout.dto';
 import type { RefreshTokenDto } from './dto/refresh-token.dto';
+import type { RegisterDto } from './dto/register.dto';
 import type { JwtAccessPayload, JwtRefreshPayload } from './interfaces/jwt-payload.interface';
 import { ConfigService } from '@nestjs/config';
 
@@ -27,6 +28,25 @@ export class AuthService {
 
     return {
       message: 'Login successful',
+      data: await this.buildAuthPayload(user),
+    };
+  }
+
+  async register(registerDto: RegisterDto) {
+    const phone = registerDto.phone.replace(/\D/g, '');
+    const existingUser = await this.usersService.findByPhone(phone);
+
+    if (existingUser) {
+      throw new ConflictException('Phone number already registered');
+    }
+
+    const user = await this.usersService.createRegisteredUser({
+      phone,
+      passwordHash: await bcrypt.hash(registerDto.password, 10),
+    });
+
+    return {
+      message: 'Registration successful',
       data: await this.buildAuthPayload(user),
     };
   }
